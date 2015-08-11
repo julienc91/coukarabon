@@ -23,7 +23,7 @@ AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize"
 ACCESS_TOKEN_URL = "https://api.twitter.com/oauth/access_token"
 
 TARGET_SCREEN_NAME = "Coukaratcheat"
-TARGET_TWEET_REGEX = re.compile(r"^((@\w+\s+)|(\b))*[Bb][Oo][Nn]\b",
+TARGET_TWEET_REGEX = re.compile(r"^((@\w+\s+)|(\b))*bon\b",
                                 re.IGNORECASE)
 TARGET_TWEET_ANSWER = "@{} Bon.".format(TARGET_SCREEN_NAME)
 
@@ -88,7 +88,7 @@ def get_tweets_to_answer_to(api, last_tweet_id=0):
     """Get tweets which will be targeted by the bot"""
 
     parameters = {"screen_name": TARGET_SCREEN_NAME,
-                  "includ_rts": False,
+                  "include_rts": False,
                   "count": 200}
     if last_tweet_id > 0:
         parameters["since_id"] = last_tweet_id
@@ -97,6 +97,12 @@ def get_tweets_to_answer_to(api, last_tweet_id=0):
     tweets_to_answer_to = sorted([tweet for tweet in last_tweets
                                   if TARGET_TWEET_REGEX.match(tweet["text"])],
                                  key=lambda t: t["id"])
+
+    if last_tweets and not tweets_to_answer_to:
+        # update the last tweet id so that we wont consider the same tweets
+        # again next time
+        update_last_tweet_id(sorted(last_tweets, key=lambda t: t["id"])[-1]["id"])
+
     return tweets_to_answer_to
 
 
@@ -114,10 +120,7 @@ def answer_to_tweets(api, tweets):
             last_tweet_id = tweet["id"]
             time.sleep(1)  # do not exceed Twitter limits
     finally:
-        if last_tweet_id:
-            # update the last tweet id
-            with open(LAST_TWEET_FILE, 'wb') as last_tweet_file:
-                pickle.dump(last_tweet_id, last_tweet_file)
+        update_last_tweet_id(last_tweet_id)
 
 
 def get_last_tweet_id():
@@ -132,6 +135,15 @@ def get_last_tweet_id():
             return pickle.load(last_tweet_file)
     except pickle.UnpicklingError:
         return 0
+
+
+def update_last_tweet_id(last_tweet_id):
+
+    """Update the id of the last tweet the bot considered"""
+
+    if last_tweet_id:
+        with open(LAST_TWEET_FILE, 'wb') as last_tweet_file:
+            pickle.dump(last_tweet_id, last_tweet_file)
 
 
 def main():
