@@ -23,7 +23,9 @@ AUTHORIZE_URL = "https://api.twitter.com/oauth/authorize"
 ACCESS_TOKEN_URL = "https://api.twitter.com/oauth/access_token"
 
 TARGET_SCREEN_NAME = "Coukaratcheat"
-TARGET_TWEET_REGEX = re.compile(r"^((@\w+\s+)|(\b))*bon\b",
+IGNORE_EXPRESSIONS = ["anniv", "appétit", "appetit", "week-end"]
+TARGET_TWEET_REGEX = re.compile(r"^((@\w+\s+)|(\b))*bon\b(?!.(" +
+                                "|".join(IGNORE_EXPRESSIONS) + "))",
                                 re.IGNORECASE)
 TARGET_TWEET_ANSWER = "@{} Bon.".format(TARGET_SCREEN_NAME)
 
